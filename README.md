@@ -1,81 +1,125 @@
-# 🚀 Datathon VinUni 2026 - Sales Forecasting Pipeline
+# Datathon VinUni 2026 - Sales Forecasting Pipeline
 
-Đây là mã nguồn chính thức cho **Phần III: Forecasting (Dự báo Dữ liệu)** của cuộc thi Datathon VinUni 2026 do đội **The Gridbreakers** thực hiện. Dự án áp dụng mô hình máy học (Machine Learning) để dự báo **Doanh thu (Revenue)** và **Giá vốn hàng bán (COGS)** hàng ngày trong khoảng thời gian từ 01/2023 đến 07/2024.
+Đây là project forecasting cho phần dự báo doanh thu và giá vốn hàng bán theo ngày. Pipeline hiện tại tập trung vào bài toán dự báo trực tiếp từ `sales.csv` và `sample_submission.csv`, sử dụng các đặc trưng lịch đơn giản, mô hình boosting mạnh, và cơ chế ensemble theo TimeSeriesSplit.
 
-Mô hình đã đạt **67 Điểm (RMSE/MAE)** - một kết quả xuất sắc nhờ áp dụng triết lý "Đơn giản là sức mạnh" (Occam's Razor) kết hợp với kỹ thuật Direct Forecasting (Dự báo trực tiếp).
+Mục tiêu của project là giữ pipeline gọn, dễ chạy, dễ kiểm tra lại kết quả và thuận tiện để tiếp tục thử nghiệm.
 
-## 🎯 Kiến trúc Pipeline (67 Điểm)
+## Tổng Quan Pipeline
 
-Giải pháp sử dụng kỹ thuật **TimeSeriesSplit Ensemble** nhằm tận dụng sức mạnh của 3 thuật toán Gradient Boosting hiện đại nhất, hoàn toàn loại bỏ sai số đệ quy (Recursive Error):
+Pipeline forecasting hiện tại gồm các thành phần chính:
 
-- **LightGBM:** Tốc độ cao, tối ưu tuyệt vời cho dữ liệu chuỗi thời gian (Time-Series) dạng bảng.
-- **XGBoost:** Mô hình Boosting mạnh mẽ, độ ổn định cực cao.
-- **CatBoost:** Chống overfitting vượt trội với thuật toán xử lý cây đối xứng.
+- Dữ liệu đầu vào chính: `sales.csv`, `sample_submission.csv`.
+- Đặc trưng sử dụng: 10 calendar/payday features.
+- Model: LightGBM, XGBoost, CatBoost.
+- Cross-validation: `TimeSeriesSplit(n_splits=5)`.
+- Target transform: train trên `np.log1p(Revenue)` và `np.log1p(COGS)`, sau đó đảo ngược bằng `np.expm1`.
+- Ensemble: lấy trung bình dự báo từ các model và các fold.
+- Ràng buộc sau dự báo: `COGS <= Revenue`.
 
-**Cơ chế hoạt động:**
-1. Áp dụng phép biến đổi logarit `np.log1p` lên mục tiêu (Revenue/COGS) để dập tắt nhiễu phương sai (Variance) do các dịp Sale bùng nổ gây ra.
-2. Dùng K-Fold `TimeSeriesSplit(n_splits=5)` để huấn luyện độc lập cả 3 mô hình (tạo ra 15 mô hình dự báo).
-3. Lấy Trung bình cộng (Simple Averaging) của tất cả các mô hình trên tập Test (tương lai) và dùng `np.expm1` để đảo ngược về giá trị thực.
+Pipeline không dùng lag/rolling recursive trong phiên bản chính, nhờ vậy tránh tích lũy sai số khi dự báo nhiều ngày trong tương lai.
 
-## 📁 Cấu trúc Thư mục
+## Cấu Trúc Thư Mục
 
-```bash
+```text
 Datathon-VinUni/
-├── data/                       # Chứa file dữ liệu (sẽ được Git ignore để tối ưu dung lượng)
+├── data/                    # Chứa các file CSV đầu vào
 ├── src/
-│   ├── data_loader.py          # Script load 15 tập dữ liệu CSV
-│   ├── feature_engineering.py  # Script tạo 10 Đặc trưng tĩnh (Calendar Features)
-│   ├── models.py               # Định nghĩa kiến trúc thuật toán (LGBM, XGB, CatBoost)
-│   ├── train.py                # Pipeline Huấn luyện & Lấy biểu quyết Ensemble
-│   └── utils.py                # Logging, Đánh giá mô hình, SHAP plots
-├── models/                     # Chứa file submission.csv và các biểu đồ phân tích
-├── logs/                       # Log ghi nhận quá trình training
+│   ├── data_loader.py       # Load dữ liệu cho forecasting và EDA
+│   ├── feature_engineering.py # Tạo calendar/payday features
+│   ├── models.py            # Định nghĩa LightGBM, XGBoost, CatBoost
+│   ├── train.py             # Pipeline train, predict và export submission
+│   └── utils.py             # Logging, metrics và visualization helpers
+├── models/                  # Lưu submission.csv và các biểu đồ đầu ra
+├── logs/                    # Lưu log quá trình chạy pipeline
 ├── notebooks/
-│   ├── 06_datathon_overclocked.ipynb  # Notebook chính thức của bản 67 điểm
-│   └── EDA_Part2_TheGridbreakers.ipynb # Notebook phân tích dữ liệu (EDA)
-├── requirements.txt            # Danh sách các thư viện Python
-├── main.py                     # Entry point chính của dự án
-└── README.md                   # Tài liệu hướng dẫn này
+│   ├── train.ipynb          # Notebook chính cho forecasting
+│   └── EDA.ipynb            # Notebook phân tích dữ liệu
+├── main.py                  # Entry point để chạy toàn bộ pipeline
+├── requirements.txt         # Danh sách thư viện phụ thuộc
+└── README.md                # Tài liệu hướng dẫn project
 ```
 
-## 🛠️ Feature Engineering (Sự Tối Giản Cốt Lõi)
+## Feature Engineering
 
-Mô hình **KHÔNG sử dụng dữ liệu ngoài**, **KHÔNG sử dụng đệ quy (Lags/Rolling)** để tránh tích tụ sai số. Mọi thứ được gói gọn trong **10 đặc trưng vàng**:
-1. `year`, `month`, `day`, `dayofweek`, `quarter`, `dayofyear`: Các mốc thời gian cơ bản.
-2. `is_weekend`: Bắt hành vi mua sắm cuối tuần.
-3. `is_payday`: Bắt hành vi "bùng nổ chi tiêu" vào các ngày nhận lương (mùng 1-3, 28-31).
-4. `month_sin` / `month_cos`: Chuỗi lượng giác (Cyclic Encoding) mô phỏng tính mùa vụ vòng lặp của 12 tháng.
+Pipeline chính dùng nhóm đặc trưng lịch tối giản:
 
-## 🚀 Hướng dẫn Cài đặt và Sử dụng
+- `year`, `month`, `day`, `dayofweek`
+- `is_weekend`
+- `dayofyear`, `quarter`
+- `is_payday`
+- `month_sin`, `month_cos`
 
-### 1. Môi trường (Environment)
+Cách thiết kế này giúp notebook và code trong `src/` khớp nhau, dễ debug, và tránh phụ thuộc vào các bảng transaction nếu chưa kiểm chứng rõ hiệu quả.
 
-Khuyến nghị sử dụng Conda để tạo môi trường ảo:
+## Cài Đặt Môi Trường
 
-```bash
+Khuyến nghị chạy project bằng conda env `datathon`:
+
+```powershell
 conda create -n datathon python=3.11.7
 conda activate datathon
 pip install -r requirements.txt
 ```
 
-### 2. Dữ liệu (Data)
+Nếu env `datathon` đã tồn tại, chỉ cần cài hoặc cập nhật dependencies:
 
-Copy toàn bộ các file `.csv` của ban tổ chức cấp (ít nhất là `sales.csv` và `sample_submission.csv`) vào trong thư mục `data/` của dự án. 
-*(Lưu ý: Thư mục này đã được thiết lập `.gitignore` để không bị đẩy dữ liệu lớn lên GitHub).*
-
-### 3. Chạy Pipeline (Training & Inference)
-
-Sử dụng file `main.py` để khởi chạy. Quá trình chạy diễn ra cực kỳ nhanh (dưới 1 phút):
-
-```bash
-python main.py --skip-tuning
+```powershell
+conda run -n datathon pip install -r requirements.txt
 ```
 
-### 4. Kết quả đầu ra (Output)
+## Chuẩn Bị Dữ Liệu
 
-Sau khi chạy xong, các kết quả sẽ xuất hiện trong thư mục `models/`:
-- `submission.csv`: File dự báo Revenue và COGS định dạng chuẩn nộp lên Kaggle.
-- `forecast_revenue.png`: Biểu đồ so sánh chuỗi thời gian của tập Train và đoạn dự báo Test.
+Đặt các file CSV vào thư mục `data/`. Tối thiểu pipeline forecasting cần:
 
----
-*Developed by The Gridbreakers for VinUni Datathon 2026 - Round 1*
+```text
+data/sales.csv
+data/sample_submission.csv
+```
+
+Các file dữ liệu khác có thể giữ trong `data/` để phục vụ EDA hoặc thử nghiệm mở rộng, nhưng pipeline forecasting mặc định chỉ cần hai file trên.
+
+## Cách Chạy Pipeline
+
+Chạy từ thư mục gốc project:
+
+```powershell
+conda run -n datathon python main.py --data-dir data --output-dir models
+```
+
+Có thể thay đổi số fold hoặc seed nếu cần:
+
+```powershell
+conda run -n datathon python main.py --data-dir data --output-dir models --n-folds 5 --seed 42
+```
+
+## Kết Quả Đầu Ra
+
+Sau khi chạy xong, kết quả chính nằm trong:
+
+```text
+models/submission.csv
+```
+
+Pipeline cũng có thể sinh thêm các biểu đồ phân tích trong `models/`, ví dụ:
+
+```text
+models/forecast_revenue.png
+models/forecast_cogs.png
+models/shap_revenue_drivers.png
+models/shap_cogs_drivers.png
+```
+
+File `submission.csv` gồm các cột dự báo cần thiết theo định dạng của `sample_submission.csv`, đồng thời được kiểm tra để không có giá trị thiếu, không âm, và đảm bảo `COGS` không vượt quá `Revenue`.
+
+## Notebook
+
+- `notebooks/train.ipynb`: phiên bản notebook tự chạy độc lập của pipeline forecasting.
+- `notebooks/EDA.ipynb`: notebook phân tích dữ liệu, dùng để hiểu dữ liệu và kiểm tra các giả thuyết trước khi đưa vào pipeline chính.
+
+Khi thay đổi logic model hoặc feature trong notebook, nên đồng bộ lại với `src/` để tránh notebook và CLI tạo ra kết quả khác nhau.
+
+## Ghi Chú Phát Triển
+
+- Giữ pipeline mặc định đơn giản và có thể tái lập.
+- Giữ README, notebook markdown và log chính thức ở dạng gọn gàng, dễ đọc.
+- Nếu thêm feature mới, nên thử từng nhóm nhỏ và so sánh bằng validation trước khi đưa vào pipeline chính.
