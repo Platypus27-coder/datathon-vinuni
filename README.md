@@ -2,8 +2,6 @@
 
 Đây là project forecasting cho phần dự báo doanh thu và giá vốn hàng bán theo ngày. Pipeline hiện tại tập trung vào bài toán dự báo trực tiếp từ `sales.csv` và `sample_submission.csv`, sử dụng các đặc trưng lịch đơn giản, mô hình boosting mạnh, và cơ chế ensemble theo TimeSeriesSplit.
 
-Mục tiêu của project là giữ pipeline gọn, dễ chạy, dễ kiểm tra lại kết quả và thuận tiện để tiếp tục thử nghiệm.
-
 ## Tổng Quan Pipeline
 
 Pipeline forecasting hiện tại gồm các thành phần chính:
@@ -61,12 +59,6 @@ conda activate datathon
 pip install -r requirements.txt
 ```
 
-Nếu env `datathon` đã tồn tại, chỉ cần cài hoặc cập nhật dependencies:
-
-```powershell
-conda run -n datathon pip install -r requirements.txt
-```
-
 ## Chuẩn Bị Dữ Liệu
 
 Đặt các file CSV vào thư mục `data/`. Tối thiểu pipeline forecasting cần:
@@ -83,15 +75,8 @@ Các file dữ liệu khác có thể giữ trong `data/` để phục vụ EDA 
 Chạy từ thư mục gốc project:
 
 ```powershell
-conda run -n datathon python main.py --data-dir data --output-dir models
+python main.py
 ```
-
-Có thể thay đổi số fold hoặc seed nếu cần:
-
-```powershell
-conda run -n datathon python main.py --data-dir data --output-dir models --n-folds 5 --seed 42
-```
-
 ## Kết Quả Đầu Ra
 
 Sau khi chạy xong, kết quả chính nằm trong:
