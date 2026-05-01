@@ -1,0 +1,41 @@
+# Data
+data/
+!data/.gitkeep
+
+# Models and predictions
+models/*.pkl
+models/*.joblib
+models/*.pt
+models/*.h5
+# (Vẫn giữ lại models/submission.csv và các file ảnh plots)
+!models/submission.csv
+!models/*.png
+
+# Logs
+logs/
+!logs/.gitkeep
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Virtual Environment
+venv/
+env/
+.env
+.conda/
+.venv/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
